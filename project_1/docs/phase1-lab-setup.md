@@ -18,14 +18,14 @@ We will implement a **3-Tier Architecture** (simplified):
 
 ```mermaid
 graph TD
-    Cloud[Internet] -->|WAN| FW[Firewall (pfSense/ASA)]
-    FW -->|DMZ| WebSrv[Web Server (DMZ)]
-    FW -->|LAN| Core[Core Switch (L3)]
+    Cloud[Internet] -->|WAN| FW["Firewall (pfSense/ASA)"]
+    FW -->|DMZ| WebSrv["Web Server (DMZ)"]
+    FW -->|LAN| Core["Core Switch (L3)"]
     Core -->|Trunk| Acc1[Access Switch 1]
     Core -->|Trunk| Acc2[Access Switch 2]
     Acc1 -->|VLAN 10| PC1[HR PC]
     Acc2 -->|VLAN 20| PC2[IT PC]
-    Acc2 -->|VLAN 20| Kali[Kali Linux (Attacker)]
+    Acc2 -->|VLAN 20| Kali["Kali Linux (Attacker)"]
 ```
 
 ## How to Implement
