@@ -1,4 +1,4 @@
-# Phase 1 — Lab Environment Setup (GNS3 / Cisco Packet Tracer)
+# Phase 1 — Lab Environment Setup (Cisco Packet Tracer)
 
 ## What Is This Phase?
 This phase involves building the **virtual network lab** that will serve as the foundation for all subsequent troubleshooting and security analysis tasks. We will create a realistic enterprise topology featuring a Firewall (pfSense/Cisco ASA), a Core Switch, Access Switches, and endpoint machines (Windows/Linux VMs).
@@ -9,7 +9,7 @@ This phase involves building the **virtual network lab** that will serve as the 
 |---|---|
 | **Safe Sandbox** | Perform destructive tests (breaking routing, blocking ports) without affecting a real network |
 | **Realistic Complexities** | A simple flat network won't teach you VLANs or routing. We need a multi-segment network |
-| **Tool Familiarity** | GNS3 and Packet Tracer are industry-standard simulation tools used for CCNA/CCNP certification |
+| **Tool Familiarity** | Packet Tracer is an industry-standard simulation tool used for CCNA/CCNP certification |
 | **Foundation** | You can't troubleshoot "broken connectivity" if you haven't first built a working network |
 
 ## Lab Topology Design
@@ -30,17 +30,7 @@ graph TD
 
 ## How to Implement
 
-### Option A: GNS3 (Recommended for Advanced/Realistic Simulation)
-**Requirements:** PC with 16GB+ RAM, VirtualBox/VMware Workstation.
-1. **Install GNS3** and GNS3 VM.
-2. **Download Images:**
-   - Router: Cisco c7200 (or VyOS for free alternative)
-   - Switch: GNS3 built-in or Cisco IOU level 2
-   - Firewall: pfSense Community Edition ISO
-   - Endpoints: Windows 10 VM, Kali Linux VM (lightweight)
-3. **Configure Integration:** Connect GNS3 to VirtualBox/VMware to run the actual OSes.
-
-### Option B: Cisco Packet Tracer (Recommended for Beginners/Lighter Resources)
+### Implementation Strategy: Cisco Packet Tracer
 **Requirements:** Packet Tracer 8.x (Free from Cisco NetAcad).
 1. **Drag & Drop Devices:**
    - 1x ISR 4331 Router (Edge)
@@ -83,7 +73,7 @@ ip default-gateway 192.168.20.1
 ## What Success Looks Like
 - ✅ All devices are powered on and connected.
 - ✅ You can ping the default gateway from the Core Switch.
-- ✅ GNS3/Packet Tracer project file is saved and stable.
+- ✅ Packet Tracer project file is saved and stable.
 - ✅ Topology diagram matches the implementation.
 
 ## What's Next?

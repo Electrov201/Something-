@@ -1,6 +1,6 @@
 # Project 1: SOC Lab Environment (Network Simulation)
 
-This project focuses on building a **Simulated Enterprise Network** using Cisco Packet Tracer or GNS3 to practice fundamental networking and security skills.
+This project focuses on building a **Simulated Enterprise Network** using Cisco Packet Tracer to practice fundamental networking and security skills.
 
 ## 📂 Documentation
 

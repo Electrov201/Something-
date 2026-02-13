@@ -8,7 +8,7 @@ For a visual overview of all projects, see the **[Architecture Overview](ARCHITE
 ## 📂 Projects
 
 ### [Project 1: SOC Lab Environment](project_1/)
-A network simulation project using **Cisco Packet Tracer / GNS3**.
+A network simulation project using **Cisco Packet Tracer**.
 - **Focus:** L1-L3 Networking, Firewalls (ASA), VPNs, WireShark Analysis.
 - **Goal:** Build a secure enterprise network from scratch and defend it.
 

@@ -10,7 +10,7 @@ This repository contains two primary projects focused on Security Operations Cen
 ## 1. Project 1: SOC Lab Environment
 **Location:** `/project_1`
 
-This project involves building a simulated enterprise network to practice L1-L3 troubleshooting, firewall configuration, and VPN setups. It uses **Cisco Packet Tracer** or **GNS3**.
+This project involves building a simulated enterprise network to practice L1-L3 troubleshooting, firewall configuration, and VPN setups. It uses **Cisco Packet Tracer**.
 
 ### 🏗️ Network Topology Diagram
 
