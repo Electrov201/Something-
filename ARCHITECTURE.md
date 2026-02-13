@@ -30,13 +30,13 @@ graph TD
     end
 
     subgraph "Internal LAN (Trusted)"
-        Core[Core Switch L3]
-        Acc1[Access Switch 1 - HR]
-        Acc2[Access Switch 2 - IT]
+        Core["Core Switch L3"]
+        Acc1["Access Switch 1 - HR"]
+        Acc2["Access Switch 2 - IT"]
         
-        PC_HR[HR Workstation]
-        PC_IT[IT Workstation]
-        Kali[Kali Linux (Attacker)]
+        PC_HR["HR Workstation"]
+        PC_IT["IT Workstation"]
+        Kali["Kali Linux (Attacker)"]
     end
 
     Cloud --> ISP
@@ -72,22 +72,22 @@ graph TD
     subgraph "Kubernetes Cluster (Namespace: soc)"
         
         subgraph "Ingress & Networking"
-            Ingress[Ingress Controller / NodePort]
+            Ingress["Ingress Controller / NodePort"]
         end
 
         subgraph "SIEM Core (Wazuh)"
-            Manager[Wazuh Manager (Deployment)]
-            Indexer[Wazuh Indexer / OpenSearch (StatefulSet)]
-            Dashboard[Wazuh Dashboard (Deployment)]
+            Manager["Wazuh Manager (Deployment)"]
+            Indexer["Wazuh Indexer / OpenSearch (StatefulSet)"]
+            Dashboard["Wazuh Dashboard (Deployment)"]
         end
 
         subgraph "Incident Response (TheHive)"
-            Hive[TheHive 5 (Deployment)]
-            Cassa[Cassandra DB (StatefulSet)]
+            Hive["TheHive 5 (Deployment)"]
+            Cassa["Cassandra DB (StatefulSet)"]
         end
 
         subgraph "Visualization"
-            Grafana[Grafana (Deployment)]
+            Grafana["Grafana (Deployment)"]
         end
     end
 
