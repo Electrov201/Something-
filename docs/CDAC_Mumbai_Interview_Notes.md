@@ -1432,3 +1432,644 @@ done
 
 ### **Q6: What is Ansible and how would you use it at CDAC?**
 > **Answer:** "Ansible is an agentless configuration management tool. It uses SSH to connect to servers and YAML playbooks to describe the desired state. At CDAC, I would use Ansible to: (1) Deploy standard configurations across 100+ servers consistently. (2) Automate patch management — push security updates to all servers simultaneously. (3) Enforce compliance — ensure all servers meet ISO 27001 requirements (correct firewall rules, disabled unnecessary services, proper logging). (4) Disaster recovery — rebuild a server from a playbook in minutes instead of hours."
+
+---
+
+## 8. Docker (Containerization)
+
+### **8.1. What is Docker?**
+
+**Interview Answer:**
+> "Docker is a platform that packages applications and their dependencies into lightweight, portable containers. Unlike VMs, containers share the host OS kernel, making them much faster to start (seconds vs minutes) and using far less resources."
+
+**Docker vs Virtual Machines:**
+| Feature | Docker Container | Virtual Machine |
+|:---|:---|:---|
+| **Size** | MBs (lightweight) | GBs (full OS) |
+| **Startup** | Seconds | Minutes |
+| **OS** | Shares host kernel | Full guest OS |
+| **Isolation** | Process-level | Hardware-level |
+| **Performance** | Near native | 10-20% overhead |
+| **Use Case** | Microservices, CI/CD | Legacy apps, full OS testing |
+
+### **8.2. Docker Architecture**
+
+```
+┌─────────────────────────────────────────────┐
+│                Docker Client                 │
+│   docker build, docker pull, docker run      │
+└──────────────────┬──────────────────────────┘
+                   │ REST API
+┌──────────────────▼──────────────────────────┐
+│              Docker Daemon (dockerd)         │
+│  Manages images, containers, networks, vols  │
+└──┬───────────────┬──────────────┬───────────┘
+   │               │              │
+┌──▼───┐    ┌──────▼──┐    ┌─────▼─────┐
+│Images│    │Containers│    │  Volumes  │
+└──────┘    └─────────┘    └───────────┘
+```
+
+### **8.3. Essential Docker Commands**
+
+```bash
+# Pull an image from Docker Hub
+docker pull nginx:latest
+
+# Run a container (detached, with port mapping)
+docker run -d --name my-web -p 8080:80 nginx
+#  -d = detached (background)
+#  --name = give it a name
+#  -p 8080:80 = host port 8080 → container port 80
+
+# List running containers
+docker ps
+
+# List ALL containers (including stopped)
+docker ps -a
+
+# Stop / Start / Restart
+docker stop my-web
+docker start my-web
+docker restart my-web
+
+# View logs
+docker logs my-web
+docker logs -f my-web    # Follow (live stream)
+
+# Execute command inside running container
+docker exec -it my-web /bin/bash
+#  -i = interactive, -t = terminal
+
+# Remove container
+docker rm my-web           # Must be stopped first
+docker rm -f my-web        # Force remove (even if running)
+
+# Remove image
+docker rmi nginx:latest
+
+# Build an image from Dockerfile
+docker build -t my-app:v1 .
+
+# View resource usage
+docker stats
+```
+
+### **8.4. Dockerfile Example**
+
+```dockerfile
+# Base image
+FROM ubuntu:22.04
+
+# Metadata
+LABEL maintainer="admin@cdac.in"
+
+# Install packages
+RUN apt-get update && apt-get install -y \
+    nginx \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy config
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy website files
+COPY ./website /var/www/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s CMD curl -f http://localhost/ || exit 1
+
+# Start command
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+### **8.5. Docker Compose**
+
+```yaml
+# docker-compose.yml — Multi-container application
+version: '3.8'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./html:/usr/share/nginx/html
+    depends_on:
+      - app
+    restart: always
+
+  app:
+    build: ./app
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_PASSWORD=secret
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: cdac_app
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
+```
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# View logs from all services
+docker-compose logs -f
+```
+
+### **8.6. Docker Networking**
+
+| Network Type | Description | Use Case |
+|:---|:---|:---|
+| **bridge** (default) | Containers on same host can communicate | Single-host deployments |
+| **host** | Container shares host's network | Performance-critical apps |
+| **none** | No networking | Isolated batch processing |
+| **overlay** | Containers across multiple hosts | Docker Swarm / multi-host |
+
+---
+
+## 9. Kubernetes (Container Orchestration)
+
+### **9.1. What is Kubernetes?**
+
+**Interview Answer:**
+> "Kubernetes (K8s) is an open-source container orchestration platform. It automates deployment, scaling, and management of containerized applications. If Docker is like a shipping container, Kubernetes is the port that manages thousands of containers — deciding where to place them, replacing broken ones, and scaling up when traffic increases."
+
+### **9.2. Kubernetes Architecture**
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  CONTROL PLANE (Master)               │
+│  ┌─────────────┐ ┌───────────┐ ┌──────────────────┐ │
+│  │ API Server   │ │ Scheduler │ │ Controller Manager│ │
+│  │ (kubectl     │ │ (assigns  │ │ (ensures desired  │ │
+│  │  talks here) │ │  pods to  │ │  state matches    │ │
+│  │              │ │  nodes)   │ │  actual state)    │ │
+│  └─────────────┘ └───────────┘ └──────────────────┘ │
+│  ┌──────────────────────────────────────────────┐    │
+│  │ etcd (Key-Value store — cluster database)     │    │
+│  └──────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          ▼               ▼               ▼
+┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+│  Worker Node 1 │ │  Worker Node 2 │ │  Worker Node 3 │
+│  ┌──────────┐ │ │  ┌──────────┐ │ │  ┌──────────┐ │
+│  │ kubelet  │ │ │  │ kubelet  │ │ │  │ kubelet  │ │
+│  │ kube-proxy│ │ │  │ kube-proxy│ │ │  │ kube-proxy│ │
+│  │ Container │ │ │  │ Container │ │ │  │ Container │ │
+│  │ Runtime   │ │ │  │ Runtime   │ │ │  │ Runtime   │ │
+│  │ ┌──┐ ┌──┐│ │ │  │ ┌──┐     │ │ │  │ ┌──┐ ┌──┐│ │
+│  │ │P1│ │P2││ │ │  │ │P3│     │ │ │  │ │P4│ │P5││ │
+│  │ └──┘ └──┘│ │ │  │ └──┘     │ │ │  │ └──┘ └──┘│ │
+│  └──────────┘ │ │  └──────────┘ │ │  └──────────┘ │
+└───────────────┘ └───────────────┘ └───────────────┘
+```
+
+### **9.3. Key Kubernetes Objects**
+
+| Object | What It Is | Analogy |
+|:---|:---|:---|
+| **Pod** | Smallest unit — one or more containers | A single worker at a desk |
+| **Deployment** | Manages pods — ensures desired number are running | The manager who hires/fires workers |
+| **Service** | Stable network endpoint to access pods | A receptionist who routes calls to the right worker |
+| **Namespace** | Logical isolation within a cluster | Different departments in a building |
+| **ConfigMap** | External configuration (non-sensitive) | A shared notice board |
+| **Secret** | Sensitive data (base64 encoded) | A locked safe |
+| **PersistentVolume** | Durable storage that survives pod restarts | A filing cabinet |
+
+### **9.4. Essential kubectl Commands**
+
+```bash
+# Get cluster info
+kubectl cluster-info
+kubectl get nodes
+
+# Create deployment
+kubectl create deployment nginx-app --image=nginx --replicas=3
+
+# Get resources
+kubectl get pods                      # List pods
+kubectl get pods -o wide              # With IP and Node info
+kubectl get deployments               # List deployments
+kubectl get services                  # List services
+kubectl get all -n monitoring         # All resources in a namespace
+
+# Describe (detailed info + events)
+kubectl describe pod <pod-name>
+
+# View logs
+kubectl logs <pod-name>
+kubectl logs -f <pod-name>            # Follow live
+
+# Execute into a pod
+kubectl exec -it <pod-name> -- /bin/bash
+
+# Scale deployment
+kubectl scale deployment nginx-app --replicas=5
+
+# Expose deployment as a service
+kubectl expose deployment nginx-app --port=80 --type=NodePort
+
+# Apply YAML manifest
+kubectl apply -f deployment.yaml
+
+# Delete resources
+kubectl delete pod <pod-name>
+kubectl delete deployment nginx-app
+```
+
+### **9.5. Kubernetes YAML Manifest Example**
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdac-web
+  namespace: production
+spec:
+  replicas: 3                    # Run 3 identical pods
+  selector:
+    matchLabels:
+      app: cdac-web
+  template:
+    metadata:
+      labels:
+        app: cdac-web
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        resources:
+          requests:              # Minimum guaranteed
+            cpu: "100m"
+            memory: "128Mi"
+          limits:                # Maximum allowed
+            cpu: "500m"
+            memory: "256Mi"
+        livenessProbe:           # Restart if unhealthy
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdac-web-svc
+spec:
+  selector:
+    app: cdac-web
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer
+```
+
+---
+
+## 10. Ansible (Automation & Configuration Management)
+
+### **10.1. What is Ansible?**
+
+**Interview Answer:**
+> "Ansible is an agentless IT automation tool. Unlike Puppet or Chef which require agents installed on managed nodes, Ansible only needs SSH access. You write desired-state configurations in YAML (called Playbooks), and Ansible ensures all servers match that state. It's idempotent — running the same playbook twice doesn't change anything if the system already matches."
+
+### **10.2. Ansible Architecture**
+
+```
+┌──────────────────┐
+│  Control Node     │ ← Where Ansible is installed
+│  (Your laptop)    │
+│                  │
+│  ┌────────────┐  │
+│  │ Playbook   │  │ ← YAML files describing desired state
+│  │ Inventory  │  │ ← List of managed hosts
+│  │ Modules    │  │ ← Built-in capabilities (apt, copy, service...)
+│  └─────┬──────┘  │
+└────────┼─────────┘
+         │ SSH (no agent needed!)
+    ┌────┼──────────────┐
+    ▼    ▼              ▼
+┌──────┐ ┌──────┐ ┌──────┐
+│Web-1 │ │Web-2 │ │DB-1  │ ← Managed Nodes
+└──────┘ └──────┘ └──────┘
+```
+
+### **10.3. Ansible Inventory**
+
+```ini
+# /etc/ansible/hosts (or custom inventory file)
+
+[webservers]
+web1.cdac.in ansible_host=192.168.1.10
+web2.cdac.in ansible_host=192.168.1.11
+
+[dbservers]
+db1.cdac.in ansible_host=192.168.1.20
+
+[monitoring]
+grafana.cdac.in ansible_host=192.168.1.30
+
+[all:vars]
+ansible_user=admin
+ansible_ssh_private_key_file=~/.ssh/cdac_key
+```
+
+### **10.4. Ansible Playbook Example**
+
+```yaml
+# secure_server.yml — Harden a new Linux server
+---
+- name: Harden CDAC Linux Servers
+  hosts: webservers
+  become: yes          # Run as root (sudo)
+
+  tasks:
+    - name: Update all packages
+      apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: Install security tools
+      apt:
+        name:
+          - fail2ban
+          - ufw
+          - auditd
+          - unattended-upgrades
+        state: present
+
+    - name: Disable root SSH login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+      notify: Restart SSH
+
+    - name: Enable and configure UFW
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop:
+        - '22'
+        - '80'
+        - '443'
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+
+    - name: Start fail2ban
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: sshd
+        state: restarted
+```
+
+### **10.5. Ansible Ad-Hoc Commands**
+
+```bash
+# Ping all servers (test connectivity)
+ansible all -m ping
+
+# Check uptime on web servers
+ansible webservers -m command -a "uptime"
+
+# Install nginx on all web servers
+ansible webservers -m apt -a "name=nginx state=present" -b
+
+# Copy a file to all servers
+ansible all -m copy -a "src=/local/file.conf dest=/etc/app.conf" -b
+
+# Restart a service
+ansible dbservers -m service -a "name=mysql state=restarted" -b
+
+# Run playbook
+ansible-playbook secure_server.yml
+ansible-playbook secure_server.yml --check    # Dry run (no changes)
+```
+
+---
+
+## 11. Subnetting (Must Know for Networking Interviews)
+
+### **11.1. Subnetting Basics**
+
+**Interview Answer:**
+> "Subnetting divides a large network into smaller, more manageable sub-networks. This improves security (isolating departments), reduces broadcast traffic, and makes efficient use of IP addresses."
+
+**CIDR Notation Quick Reference:**
+
+| CIDR | Subnet Mask | Hosts per Subnet | Subnets from /24 |
+|:---|:---|:---|:---|
+| /24 | 255.255.255.0 | 254 | 1 |
+| /25 | 255.255.255.128 | 126 | 2 |
+| /26 | 255.255.255.192 | 62 | 4 |
+| /27 | 255.255.255.224 | 30 | 8 |
+| /28 | 255.255.255.240 | 14 | 16 |
+| /29 | 255.255.255.248 | 6 | 32 |
+| /30 | 255.255.255.252 | 2 | 64 (point-to-point links) |
+
+**Formula:** Usable Hosts = 2^(32 - prefix) - 2 (subtract network and broadcast addresses)
+
+### **11.2. Subnetting Example**
+
+**Q: "Subnet 192.168.1.0/24 into 4 equal subnets"**
+
+> Need 4 subnets → borrow 2 bits (2² = 4) → new prefix = /26
+
+| Subnet | Network Address | First Host | Last Host | Broadcast |
+|:---|:---|:---|:---|:---|
+| 1 | 192.168.1.0/26 | 192.168.1.1 | 192.168.1.62 | 192.168.1.63 |
+| 2 | 192.168.1.64/26 | 192.168.1.65 | 192.168.1.126 | 192.168.1.127 |
+| 3 | 192.168.1.128/26 | 192.168.1.129 | 192.168.1.190 | 192.168.1.191 |
+| 4 | 192.168.1.192/26 | 192.168.1.193 | 192.168.1.254 | 192.168.1.255 |
+
+Each subnet: 64 addresses (62 usable hosts).
+
+**Q: "What subnet does 10.0.5.130/25 belong to?"**
+> /25 means subnets of 128 IPs. 130 falls in the 128-255 block.
+> Network: 10.0.5.128/25 | Range: 10.0.5.129 - 10.0.5.254 | Broadcast: 10.0.5.255
+
+---
+
+## 12. Encryption & PKI
+
+### **12.1. Symmetric vs Asymmetric Encryption**
+
+| Feature | Symmetric | Asymmetric |
+|:---|:---|:---|
+| **Keys** | ONE shared key (encrypt & decrypt) | TWO keys (public + private) |
+| **Speed** | Very fast | Slow (100-1000x slower) |
+| **Key Distribution** | Problem: How to share the key securely? | Public key can be shared openly |
+| **Algorithms** | AES-256, DES, 3DES, Blowfish | RSA, ECC, Diffie-Hellman |
+| **Use Case** | Bulk data encryption (disk, database) | Key exchange, digital signatures, email (PGP) |
+
+**TLS Handshake (How HTTPS Works):**
+```
+Browser                                     Web Server
+   │                                            │
+   │── 1. ClientHello (supported ciphers) ────→ │
+   │                                            │
+   │←── 2. ServerHello + Certificate ────────── │
+   │    (contains server's PUBLIC key)          │
+   │                                            │
+   │── 3. Verify certificate with CA ──→ CA     │
+   │←── 4. Certificate is valid ──────── CA     │
+   │                                            │
+   │── 5. Generate random session key ──────→   │
+   │   (encrypted with server's PUBLIC key)     │
+   │                                            │
+   │←── 6. Both now have the SESSION KEY ────── │
+   │                                            │
+   │══ 7. ALL DATA encrypted with session key ══│
+   │   (Symmetric encryption — fast!)           │
+```
+
+> **Summary:** Asymmetric encryption is used to securely exchange a symmetric key. Then all actual data flows using the faster symmetric encryption. Best of both worlds.
+
+---
+
+## 13. Incident Response & Common Attacks
+
+### **13.1. Incident Response Framework (NIST SP 800-61)**
+
+```
+┌─────────────┐    ┌─────────────┐    ┌────────────────┐
+│ 1. PREPARE  │───→│ 2. DETECT & │───→│ 3. CONTAIN,    │
+│             │    │    ANALYZE   │    │    ERADICATE,  │
+│ - IR Plan   │    │ - Monitor   │    │    RECOVER     │
+│ - Team roles│    │   alerts    │    │ - Isolate host │
+│ - Tools     │    │ - Triage    │    │ - Remove       │
+│ - Training  │    │ - Severity  │    │   malware      │
+│             │    │   level     │    │ - Restore from │
+│             │    │             │    │   backup       │
+└─────────────┘    └─────────────┘    └───────┬────────┘
+                                              │
+                                    ┌─────────▼────────┐
+                                    │ 4. POST-INCIDENT │
+                                    │    ACTIVITY       │
+                                    │ - Root cause      │
+                                    │ - Lessons learned │
+                                    │ - Update policies │
+                                    │ - Improve controls│
+                                    └──────────────────┘
+```
+
+**Scenario Q: "A server has been infected with ransomware. What do you do?"**
+> **Answer:** "(1) **Contain** — Immediately isolate the server from the network (pull the network cable or disable the port on the switch). Do NOT shut it down (volatile memory contains evidence). (2) **Assess** — Identify which files are encrypted, check if backups exist and are unaffected. (3) **Eradicate** — Image the disk for forensics, then wipe and rebuild from clean backup. (4) **Recover** — Restore data from the last known good backup. (5) **Post-Incident** — Determine how the ransomware entered (phishing email? unpatched vulnerability?). Patch the entry point, update firewall rules, conduct security awareness training."
+
+### **13.2. Common Attacks & Prevention**
+
+| Attack | How It Works | Layer | Prevention |
+|:---|:---|:---|:---|
+| **DDoS** | Overwhelms server with traffic from thousands of compromised machines (botnet) | L3/L4/L7 | Rate limiting, CDN (Cloudflare), ISP-level filtering, scrubbing centers |
+| **Man-in-the-Middle** | Attacker intercepts communication between two parties | L2/L3 | TLS/HTTPS, certificate pinning, VPN, avoid public Wi-Fi |
+| **ARP Spoofing** | Fake ARP replies to associate attacker's MAC with gateway IP | L2 | Dynamic ARP Inspection (DAI), static ARP entries, 802.1X |
+| **DNS Spoofing** | Returns fake DNS responses to redirect traffic | L7 | DNSSEC, DNS over HTTPS (DoH), trusted DNS resolvers |
+| **Phishing** | Social engineering — fake emails/websites to steal credentials | L7/Human | User training, email filtering, MFA, DMARC/SPF/DKIM |
+| **SQL Injection** | Malicious SQL in input fields to manipulate database | L7 | Parameterized queries, input validation, WAF |
+| **Brute Force** | Tries thousands of password combinations | L7 | Account lockout, fail2ban, MFA, strong password policy |
+| **Ransomware** | Encrypts files, demands payment for decryption key | L7 | Backups (3-2-1 rule), endpoint protection, patch management, email filtering |
+
+### **13.3. Wireshark Basics**
+
+**Common Display Filters:**
+```
+# HTTP traffic only
+http
+
+# DNS queries
+dns
+
+# Traffic to/from specific IP
+ip.addr == 192.168.1.100
+
+# TCP traffic on port 80
+tcp.port == 80
+
+# SYN packets only (connection initiation)
+tcp.flags.syn == 1 && tcp.flags.ack == 0
+
+# Failed SSH login attempts
+ssh && tcp.port == 22
+
+# DHCP traffic
+dhcp
+
+# ARP traffic (detect ARP spoofing)
+arp
+```
+
+**What to look for during investigation:**
+- Unusual outbound traffic (data exfiltration)
+- DNS queries to suspicious domains (C2 communication)
+- Multiple SYN packets without ACK (SYN flood)
+- ARP replies with multiple MAC addresses for same IP (ARP spoofing)
+
+---
+
+## 14. SIEM & Log Analysis
+
+**Interview Answer:**
+> "SIEM (Security Information and Event Management) collects, correlates, and analyzes logs from all devices (servers, firewalls, switches) in a centralized platform. It helps detect security incidents by correlating events — for example, a failed SSH login on Server A followed by a successful login on Server B within 5 minutes triggers an alert."
+
+**Popular SIEM Tools:**
+| Tool | Type | Use Case |
+|:---|:---|:---|
+| **Splunk** | Commercial | Enterprise-grade, powerful search (SPL) |
+| **ELK Stack** | Open Source | Elasticsearch + Logstash + Kibana |
+| **Wazuh** | Open Source | Host-based IDS + SIEM + Compliance |
+| **QRadar** | Commercial | IBM's enterprise SIEM |
+
+**What Logs to Correlate:**
+- **Auth logs** (`/var/log/auth.log`) — login attempts
+- **Firewall logs** — blocked/allowed connections
+- **Web server logs** (`/var/log/apache2/access.log`) — HTTP requests
+- **DNS logs** — domain resolution patterns
+- **Syslog** — system events
+
+---
+
+## 15. HR / Behavioral Interview Questions
+
+### **Q1: "Tell me about yourself"**
+> "I'm a PG-DITISS student specializing in Network & Security. During my course, I worked on a hands-on Kubernetes security monitoring project where I deployed containerized applications with Docker, managed them with Kubernetes, and implemented security monitoring using Wazuh and Falco. I also have experience with Linux system administration, Ansible automation, and ISO 27001 compliance concepts. I'm passionate about infrastructure security and automation — I believe in the approach of 'automate everything that can be automated' to reduce human error and improve consistency."
+
+### **Q2: "Why do you want to join CDAC?"**
+> "CDAC is India's premier R&D organization in computing and cyber security. Working here means contributing to nationally important projects — from PARAM supercomputing to cyber forensics for law enforcement. Mumbai specifically has the Cyber Security division, which aligns perfectly with my PG-DITISS specialization. I want to be part of an organization where my work has real impact on India's digital security infrastructure."
+
+### **Q3: "Describe a challenging technical problem you solved"**
+> "In my Kubernetes project, I deployed Prometheus and Grafana for monitoring, but no data was appearing on the dashboards. I systematically debugged it — first checked if the pods were running (`kubectl get pods`), then checked service endpoints, and discovered the ServiceMonitor labels didn't match the Prometheus configuration. After fixing the label selectors, I also found that the persistent volume claims were failing because the storage class was misconfigured. This taught me the importance of checking every layer of the stack systematically, not just the application layer."
+
+### **Q4: "Where do you see yourself in 5 years?"**
+> "In 5 years, I see myself as a senior security engineer, potentially leading a small team responsible for CDAC's infrastructure security. I plan to deepen my expertise in cloud security and get certified (CISSP, CKS). I'd also like to contribute to CDAC's training programs — helping the next generation of PG-DITISS students."
