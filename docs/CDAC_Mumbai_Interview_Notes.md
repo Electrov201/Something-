@@ -2073,3 +2073,535 @@ arp
 
 ### **Q4: "Where do you see yourself in 5 years?"**
 > "In 5 years, I see myself as a senior security engineer, potentially leading a small team responsible for CDAC's infrastructure security. I plan to deepen my expertise in cloud security and get certified (CISSP, CKS). I'd also like to contribute to CDAC's training programs — helping the next generation of PG-DITISS students."
+
+---
+
+## 16. Junior Linux Administrator — Interview Q&A (Complete)
+
+> These are the most commonly asked questions in junior Linux admin interviews. Every answer is written in a way you can speak directly to the interviewer.
+
+---
+
+### **Q1: What is Linux? Why is it used in servers?**
+> "Linux is a free, open-source operating system based on the Unix architecture. It's dominant in servers (96%+ of top web servers) because it's stable, secure, lightweight, and highly customizable. It doesn't require a GUI, so all system resources go to running applications. It also supports multi-user environments, has excellent networking capabilities, and has no licensing costs — unlike Windows Server which requires CALs (Client Access Licenses)."
+
+### **Q2: What is the difference between Linux and Unix?**
+| Feature | Unix | Linux |
+|:---|:---|:---|
+| **Source Code** | Proprietary (closed source) | Open source (GPL) |
+| **Cost** | Commercial (expensive) | Free |
+| **Examples** | Solaris, HP-UX, AIX, macOS | Ubuntu, RHEL, CentOS, Debian |
+| **Hardware** | Runs on specific hardware | Runs on any hardware |
+| **Development** | Single vendor per variant | Community + companies (Red Hat, Canonical) |
+
+### **Q3: What is the Linux kernel?**
+> "The kernel is the core of the operating system. It manages hardware resources — CPU scheduling, memory allocation, device drivers, and system calls. It sits between the hardware and user applications. Linux uses a monolithic kernel, meaning all drivers run in kernel space for performance. You can check the kernel version with `uname -r`."
+
+### **Q4: What is a shell? Name different types.**
+> "A shell is the command-line interpreter that takes your commands and passes them to the kernel for execution. It's the interface between the user and the kernel."
+
+| Shell | Path | Features |
+|:---|:---|:---|
+| **Bash** | `/bin/bash` | Default on most distros. Supports scripting, tab completion, history |
+| **sh** | `/bin/sh` | Original Bourne shell. Minimal, POSIX compliant |
+| **zsh** | `/bin/zsh` | Advanced features, better auto-completion, themes (Oh My Zsh) |
+| **csh/tcsh** | `/bin/csh` | C-like syntax. Used in some BSD systems |
+| **fish** | `/usr/bin/fish` | User-friendly, auto-suggestions, syntax highlighting |
+
+```bash
+# Check your current shell
+echo $SHELL
+
+# List all available shells
+cat /etc/shells
+
+# Change user's default shell
+chsh -s /bin/zsh
+```
+
+### **Q5: What is the root user? What is sudo?**
+> "Root (UID 0) is the superuser with unlimited privileges — it can read/write/delete any file, start/stop any service, and modify system configurations. Direct root login is discouraged for security reasons. Instead, we use `sudo` (Super User Do) which allows authorized regular users to execute specific commands as root. Sudo logs every command — providing an audit trail of who did what."
+
+```bash
+# Run a command as root
+sudo apt update
+
+# Switch to root shell (avoid this in production)
+sudo -i        # or  sudo su -
+
+# Check sudo privileges for current user
+sudo -l
+
+# Add user to sudo group
+usermod -aG sudo username
+
+# Sudo config file
+visudo         # ALWAYS use visudo (syntax checking)
+# Example entry: username ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+```
+
+### **Q6: Explain the Linux directory structure**
+```
+/                   ← Root of the entire filesystem (everything starts here)
+├── /bin            ← Essential user binaries (ls, cp, cat, grep)
+├── /sbin           ← System binaries (iptables, fdisk, reboot) — root only
+├── /etc            ← Configuration files (ALL config lives here)
+│   ├── /etc/passwd         ← User accounts
+│   ├── /etc/shadow         ← Encrypted passwords
+│   ├── /etc/ssh/           ← SSH configuration
+│   ├── /etc/fstab          ← Filesystem mount table
+│   └── /etc/crontab        ← System cron jobs
+├── /home           ← User home directories (/home/alice, /home/bob)
+├── /root           ← Root user's home directory
+├── /var            ← Variable data (logs, mail, spool, cache)
+│   ├── /var/log/           ← ALL log files
+│   └── /var/www/           ← Web server files
+├── /tmp            ← Temporary files (cleared on reboot)
+├── /usr            ← User programs, libraries, documentation
+│   ├── /usr/bin/           ← Non-essential user commands
+│   └── /usr/local/         ← Locally installed software
+├── /opt            ← Optional/third-party software
+├── /dev            ← Device files (sda, tty, null)
+├── /proc           ← Virtual filesystem — kernel info (PID, CPU, memory)
+├── /sys            ← Virtual filesystem — hardware/driver info
+├── /boot           ← Boot loader files (kernel, GRUB, initramfs)
+├── /lib            ← Shared libraries (like DLLs in Windows)
+├── /mnt            ← Temporary mount point for manual mounts
+└── /media          ← Auto-mount point for removable media (USB, CD)
+```
+
+### **Q7: What is the difference between /etc/passwd and /etc/shadow?**
+| File | Contains | Readable By | Example Entry |
+|:---|:---|:---|:---|
+| `/etc/passwd` | User account info (username, UID, GID, shell, home dir) | Everyone | `alice:x:1001:1001:Alice:/home/alice:/bin/bash` |
+| `/etc/shadow` | Encrypted passwords, password aging policy | Root only | `alice:$6$salt$hash...:19073:0:99999:7:::` |
+
+> "The `x` in `/etc/passwd` password field means the actual password is stored in `/etc/shadow`. This separation is a security feature — `/etc/passwd` must be world-readable (for UID lookups), but passwords should not be."
+
+### **Q8: How do you create, modify, and delete users?**
+```bash
+# Create user with home directory and bash shell
+useradd -m -s /bin/bash -c "Alice Smith" alice
+
+# Set password
+passwd alice
+
+# Modify user — add to supplementary group
+usermod -aG docker alice     # -a = append, -G = group
+
+# Change user's home directory
+usermod -d /new/home alice
+
+# Lock user account (disable login)
+usermod -L alice
+
+# Unlock user account
+usermod -U alice
+
+# Delete user (with home directory)
+userdel -r alice
+
+# View user details
+id alice
+# Output: uid=1001(alice) gid=1001(alice) groups=1001(alice),999(docker)
+```
+
+### **Q9: Explain file permissions (rwx) in detail**
+```bash
+ls -l myfile.txt
+# -rw-r--r-- 1 alice staff 1024 Feb 15 10:00 myfile.txt
+#  │├─┤├─┤├─┤
+#  │ │  │  │
+#  │ │  │  └── Others (everyone else): r-- (read only)
+#  │ │  └───── Group (staff): r-- (read only)
+#  │ └──────── Owner (alice): rw- (read + write)
+#  └─────────── File type: - (regular file), d (directory), l (link)
+
+# NUMERIC representation:
+# r=4, w=2, x=1
+# rwx = 4+2+1 = 7
+# rw- = 4+2+0 = 6
+# r-- = 4+0+0 = 4
+
+# Common permission sets:
+chmod 755 script.sh      # rwxr-xr-x  (owner full, others read+execute)
+chmod 644 config.txt     # rw-r--r--  (owner read/write, others read only)
+chmod 600 id_rsa         # rw-------  (owner only — private key!)
+chmod 777 /tmp/test      # rwxrwxrwx  (everyone full — AVOID in production!)
+
+# Recursive
+chmod -R 755 /var/www/html
+```
+
+### **Q10: What is an inode?**
+> "An inode is a data structure that stores metadata about a file — everything EXCEPT the filename and data content. It stores: file size, ownership (UID/GID), permissions, timestamps (created, modified, accessed), number of hard links, and pointers to data blocks on disk. Each file has a unique inode number within its filesystem."
+
+```bash
+# View inode numbers
+ls -i myfile.txt
+# 12345678 myfile.txt
+
+# Detailed inode info
+stat myfile.txt
+# Output shows: Size, Blocks, Inode, Links, Access/Modify/Change times
+
+# Check available inodes (you can run out!)
+df -i
+# If inodes are exhausted, you can't create files even with free disk space
+# Common cause: millions of tiny temp/session/cache files
+```
+
+### **Q11: What are the important network commands?**
+```bash
+# View IP address and interfaces
+ip addr show            # Modern (replaces ifconfig)
+ifconfig                # Legacy (may not be installed)
+
+# Test connectivity
+ping 8.8.8.8            # Ping Google DNS
+ping -c 4 google.com    # Send only 4 pings
+
+# DNS lookup
+nslookup google.com
+dig google.com          # More detailed
+host google.com         # Quick lookup
+
+# Trace route to destination
+traceroute google.com   # Linux
+tracert google.com      # Windows
+
+# Show routing table
+ip route show
+route -n                # Legacy
+
+# Show listening ports and connections
+ss -tulnp               # Modern (replaces netstat)
+netstat -tulnp           # Legacy
+# -t = TCP, -u = UDP, -l = Listening, -n = Numeric, -p = Process
+
+# Show ARP table
+arp -a
+
+# Test if a specific port is open
+nc -zv 192.168.1.10 22       # Check if SSH port is open
+curl -I https://google.com    # Check HTTP response headers
+
+# Download a file
+wget https://example.com/file.tar.gz
+curl -O https://example.com/file.tar.gz
+```
+
+### **Q12: How do you check disk usage?**
+```bash
+# Filesystem disk usage (how full are partitions)
+df -h
+# Filesystem      Size  Used  Avail Use% Mounted on
+# /dev/sda1        50G   32G    16G  67% /
+# /dev/sdb1       200G  180G    10G  95% /data   ← WARNING!
+
+# Directory/file size
+du -sh /var/log          # Total size of /var/log
+du -sh /var/log/*        # Size of each item inside
+du -h --max-depth=1 /    # Size of each top-level directory
+
+# Find largest files
+find / -type f -size +100M -exec ls -lh {} \;   # Files > 100MB
+du -ah / | sort -rh | head -20                    # Top 20 largest
+
+# Check disk I/O
+iostat -x 2              # Disk I/O stats every 2 seconds
+```
+
+### **Q13: How do you check memory and CPU usage?**
+```bash
+# Memory usage
+free -h
+# Output:        total   used   free   shared   buff/cache   available
+# Mem:            16G     8G     2G     500M       6G           7G
+# Swap:            4G     0B     4G
+# NOTE: "available" is the real free memory (free + reclaimable cache)
+
+# CPU info
+lscpu                    # CPU architecture, cores, threads
+cat /proc/cpuinfo        # Detailed per-core info
+nproc                    # Number of CPUs
+
+# Real-time monitoring
+top                      # Classic process monitor
+htop                     # Better (color, mouse, tree view)
+vmstat 2                 # Virtual memory stats every 2 sec
+uptime                   # Load average (1min, 5min, 15min)
+# Load average: If it exceeds number of CPU cores = system is overloaded
+```
+
+### **Q14: What is swap space?**
+> "Swap is disk space used as virtual memory when RAM is full. The kernel moves inactive pages from RAM to swap (swapping out) to free up RAM for active processes. It's slower than RAM but prevents out-of-memory crashes. Recommended swap = 1-2x RAM for servers under 16GB, or a fixed amount for larger systems."
+
+```bash
+# Check swap usage
+swapon --show
+free -h
+
+# Create a swap file (2GB)
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+
+# Make permanent
+echo "/swapfile swap swap defaults 0 0" >> /etc/fstab
+
+# Swappiness (how aggressively kernel uses swap, 0-100)
+cat /proc/sys/vm/swappiness    # Default: 60
+# For servers: set to 10 (prefer keeping data in RAM)
+sysctl vm.swappiness=10
+```
+
+### **Q15: What is SELinux?**
+> "SELinux (Security-Enhanced Linux) is a mandatory access control (MAC) system built into the kernel. Unlike traditional permissions (which only check user/group/other), SELinux assigns security labels to every file, process, and port. Even if a process runs as root, SELinux can restrict what it can access. It's developed by the NSA and is enabled by default on RHEL/CentOS."
+
+```bash
+# Check SELinux status
+getenforce
+# Output: Enforcing / Permissive / Disabled
+
+# Modes:
+# Enforcing  — blocks violations and logs them
+# Permissive — only logs violations (doesn't block)
+# Disabled   — completely off
+
+# Temporarily set to permissive (for troubleshooting)
+setenforce 0
+
+# Set back to enforcing
+setenforce 1
+
+# View file security context
+ls -Z /var/www/html/index.html
+# Output: system_u:object_r:httpd_sys_content_t:s0
+
+# Fix context after moving files
+restorecon -Rv /var/www/html/
+```
+
+### **Q16: What is the difference between TCP and UDP?**
+> "TCP is connection-oriented — it establishes a 3-way handshake (SYN, SYN-ACK, ACK) before sending data and guarantees delivery through acknowledgments and retransmission. UDP is connectionless — it just fires packets without checking if they arrived. TCP is used for web browsing, email, file transfer. UDP is used for DNS, video streaming, VoIP where speed matters more than reliability."
+
+### **Q17: What are signals in Linux?**
+| Signal | Number | Meaning | Can Be Caught? |
+|:---|:---|:---|:---|
+| **SIGTERM** | 15 | Graceful termination (default for `kill`) | Yes — process can clean up |
+| **SIGKILL** | 9 | Force kill immediately | No — cannot be caught or ignored |
+| **SIGHUP** | 1 | Hangup — often used to reload config | Yes |
+| **SIGINT** | 2 | Interrupt (Ctrl+C) | Yes |
+| **SIGSTOP** | 19 | Pause/Suspend process | No |
+| **SIGCONT** | 18 | Resume paused process | Yes |
+
+```bash
+# Graceful stop (preferred — lets process clean up)
+kill <PID>           # Sends SIGTERM (15)
+
+# Force kill (last resort — may corrupt data)
+kill -9 <PID>        # Sends SIGKILL
+
+# Reload config without restart
+kill -HUP <PID>      # Same as: systemctl reload <service>
+
+# Kill by name
+killall nginx
+pkill -f "python app.py"
+```
+
+### **Q18: How do you find files in Linux?**
+```bash
+# find — search by name, permissions, size, time
+find /var/log -name "*.log" -mtime -7        # Logs modified in last 7 days
+find / -user alice -type f                    # All files owned by alice
+find / -perm -4000 -type f                    # All SUID files (security audit!)
+find /tmp -type f -atime +30 -delete          # Delete files not accessed in 30 days
+
+# locate — fast search using database (run updatedb first)
+updatedb                 # Build/update the database
+locate nginx.conf        # Instant results
+
+# which — find location of a command
+which python3            # /usr/bin/python3
+
+# whereis — find binary, source, man page
+whereis nginx            # nginx: /usr/sbin/nginx /etc/nginx /usr/share/nginx
+
+# grep — search INSIDE files
+grep -r "error" /var/log/         # Search recursively
+grep -i "failed" /var/log/auth.log  # Case-insensitive
+grep -c "404" access.log           # Count matches
+```
+
+### **Q19: Explain pipes and redirection**
+```bash
+# PIPE ( | ) — sends output of one command as input to another
+cat /var/log/syslog | grep "error" | wc -l
+# Read syslog → filter lines with "error" → count them
+
+ps aux | sort -rk 3 | head -10
+# List processes → sort by CPU (3rd column, reverse) → show top 10
+
+# REDIRECTION
+echo "Hello" > file.txt       # Write to file (overwrites!)
+echo "World" >> file.txt      # Append to file
+cat file.txt
+# Hello
+# World
+
+# Redirect errors
+command 2> errors.log          # stderr only to file
+command > output.log 2>&1      # stdout AND stderr to same file
+command > /dev/null 2>&1       # Discard ALL output (silent mode)
+```
+
+### **Q20: What are environment variables?**
+```bash
+# View all environment variables
+env
+printenv
+
+# View specific variable
+echo $HOME          # /home/alice
+echo $PATH          # /usr/local/bin:/usr/bin:/bin
+echo $USER          # alice
+echo $SHELL         # /bin/bash
+
+# Set temporary (current session only)
+export MY_VAR="hello"
+echo $MY_VAR        # hello
+
+# Set permanent (add to ~/.bashrc or /etc/environment)
+echo 'export JAVA_HOME=/usr/lib/jvm/java-17' >> ~/.bashrc
+source ~/.bashrc     # Apply immediately
+
+# Important variables:
+# $PATH — directories searched for commands
+# $HOME — user's home directory
+# $PS1  — command prompt format
+# $?    — exit code of last command (0 = success, non-zero = error)
+```
+
+### **Q21: How do you archive and compress files?**
+```bash
+# tar — archive (bundle files together)
+tar -cvf archive.tar /data/        # Create verbose file
+tar -xvf archive.tar               # Extract
+
+# tar + gzip (most common in Linux)
+tar -czvf backup.tar.gz /data/     # Create compressed archive
+tar -xzvf backup.tar.gz            # Extract
+
+# tar + bzip2 (better compression, slower)
+tar -cjvf backup.tar.bz2 /data/
+
+# zip/unzip (for cross-platform compatibility)
+zip -r files.zip /data/
+unzip files.zip
+
+# View contents without extracting
+tar -tzvf backup.tar.gz
+```
+
+### **Q22: What is /dev/null?**
+> "It's a special file that discards everything written to it — like a black hole. It's used to suppress unwanted output."
+
+```bash
+# Suppress stdout
+command > /dev/null
+
+# Suppress ALL output (stdout + stderr)
+command > /dev/null 2>&1
+
+# Real-world: Run cron job silently
+0 * * * * /scripts/cleanup.sh > /dev/null 2>&1
+```
+
+### **Q23: What is the difference between a process and a daemon?**
+> "A process is any running program. A daemon is a special background process that runs continuously, typically started at boot, with no user interaction. Daemon names usually end with 'd' — `sshd`, `httpd`, `crond`, `systemd`. Daemons are managed by `systemctl` and typically write logs to `/var/log/`."
+
+### **Q24: How do you schedule something to run once (not recurring)?**
+```bash
+# at command — one-time scheduled task
+at 3:00 AM tomorrow
+> /scripts/maintenance.sh
+> Ctrl+D
+
+# Or inline
+echo "/scripts/migrate.sh" | at 02:00 AM Feb 16
+
+# List pending at jobs
+atq
+
+# Remove an at job
+atrm <job-number>
+```
+
+### **Q25: What is /proc filesystem?**
+> "/proc is a virtual filesystem (exists only in memory, not on disk). It provides real-time information about the system and running processes. Every process has a directory `/proc/<PID>/` containing its status, memory map, and command line."
+
+```bash
+cat /proc/cpuinfo       # CPU details
+cat /proc/meminfo       # Memory details
+cat /proc/version       # Kernel version
+cat /proc/uptime        # System uptime in seconds
+cat /proc/1/status      # Status of PID 1 (systemd)
+cat /proc/1/cmdline     # Command that started PID 1
+ls /proc/1/fd/          # All file descriptors opened by PID 1
+```
+
+### **Q26: What is the difference between su and su -?**
+```bash
+su alice        # Switch user but KEEP current environment (PATH, HOME stay same)
+su - alice      # Switch user with FULL login shell (loads alice's .bashrc, .profile)
+
+# su -  is preferred because it gives you the target user's complete environment
+# su    can cause issues because your PATH still points to your own directories
+```
+
+### **Q27: How do you troubleshoot a service that won't start?**
+> **Step-by-step approach:**
+> 1. `systemctl status nginx` — Check the status and look for error messages
+> 2. `journalctl -u nginx -n 50` — View last 50 log entries for nginx
+> 3. `nginx -t` — Test configuration syntax (most services have a config test)
+> 4. `ss -tulnp | grep :80` — Is another process already using port 80?
+> 5. `ls -la /var/log/nginx/` — Check file permissions on log directory
+> 6. `df -h` — Is the disk full? Services fail silently when disk is 100%
+> 7. `getenforce` — Is SELinux blocking it?
+
+### **Q28: What is GRUB?**
+> "GRUB (Grand Unified Bootloader) is the boot loader for Linux. It's the first software that runs after BIOS/UEFI and it lets you choose which kernel to boot, pass kernel parameters, and boot into recovery mode. The config is at `/boot/grub/grub.cfg` (don't edit directly — use `update-grub` on Debian or `grub2-mkconfig` on RHEL)."
+
+### **Q29: What is the difference between yum/dnf and apt?**
+| Feature | apt (Debian/Ubuntu) | yum/dnf (RHEL/CentOS) |
+|:---|:---|:---|
+| **Install** | `apt install nginx` | `dnf install nginx` |
+| **Remove** | `apt remove nginx` | `dnf remove nginx` |
+| **Update list** | `apt update` | `dnf check-update` |
+| **Upgrade all** | `apt upgrade` | `dnf upgrade` |
+| **Search** | `apt search nginx` | `dnf search nginx` |
+| **Package format** | `.deb` | `.rpm` |
+| **Show info** | `apt show nginx` | `dnf info nginx` |
+
+### **Q30: Quick Fire — One-Liner Answers**
+
+| Question | Answer |
+|:---|:---|
+| Default port for SSH? | 22 |
+| Default port for HTTP/HTTPS? | 80 / 443 |
+| Command to check kernel version? | `uname -r` |
+| Command to check OS version? | `cat /etc/os-release` |
+| Where are user passwords stored? | `/etc/shadow` (encrypted) |
+| Where are cron jobs stored? | `/var/spool/cron/` or `crontab -l` |
+| What does `chmod 700` mean? | Owner: full access, Group: none, Others: none |
+| What does PID 1 represent? | The init system (`systemd` on modern Linux) |
+| How to check who is logged in? | `who` or `w` |
+| How to check last logins? | `last` or `lastlog` |
+| What does `tail -f` do? | Follow a file in real-time (great for monitoring logs) |
+| What is `/etc/fstab`? | Filesystem table — defines what mounts at boot |
+| What is `/etc/resolv.conf`? | DNS resolver configuration |
+| What is `awk` used for? | Text processing and pattern scanning |
+| What is `sed` used for? | Stream editor — find and replace in files |
