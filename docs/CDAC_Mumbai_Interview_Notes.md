@@ -1,11 +1,5 @@
 # CDAC Mumbai — Complete Interview Preparation Guide
 
-> **Course:** PG-DITISS | **Position:** Project Engineer (Network & Security)
-> **Date:** 16-Feb-2026 @ 09:30 AM | **Mode:** Online from Home
-> **Location (Posting):** C-DAC Mumbai | **Bond:** No
-
----
-
 ## 1. Company & Role Context
 
 ### What is CDAC?
@@ -334,6 +328,257 @@ ls -i report.pdf report_link.pdf
 
 **Scenario Q: "Why would you choose Linux over Windows for a server?"**
 > **Answer:** "For a web server or containerized environment, Linux is the clear choice — it's lightweight (no GUI overhead), more secure by default, free (no licensing costs), and Docker/Kubernetes run natively on Linux. However, for an enterprise environment that needs Active Directory, Exchange mail, or runs .NET applications, Windows Server is the better choice. In CDAC's case, since the role involves Docker, Kubernetes, and Ansible, Linux is the primary OS."
+
+---
+
+### **2.8. Linux Run Levels**
+
+**Interview Answer:**
+> "Run levels define the state of the machine — what services are running. In modern Linux (systemd), they are called 'targets' instead of run levels."
+
+| Run Level | systemd Target | State | Description |
+|:---|:---|:---|:---|
+| **0** | `poweroff.target` | Halt | System is shutting down |
+| **1** | `rescue.target` | Single-User | Maintenance mode (no network, root only). Used for password reset. |
+| **2** | `multi-user.target` | Multi-User (no NFS) | Debian-specific, multi-user without networking |
+| **3** | `multi-user.target` | Multi-User with Network | **Most servers run here** — full CLI, all services, no GUI |
+| **4** | — | Unused/Custom | Reserved for custom use |
+| **5** | `graphical.target` | Multi-User + GUI | Desktop systems (GNOME/KDE login screen) |
+| **6** | `reboot.target` | Reboot | System is rebooting |
+
+**Commands:**
+```bash
+# Check current run level (old way)
+runlevel
+# Output: N 3  (previous: None, current: 3)
+
+# Check current target (modern way)
+systemctl get-default
+# Output: multi-user.target
+
+# Change run level temporarily
+systemctl isolate graphical.target    # Switch to GUI
+systemctl isolate multi-user.target   # Switch to CLI only
+
+# Change default permanently (survives reboot)
+systemctl set-default multi-user.target   # Server (no GUI)
+systemctl set-default graphical.target    # Desktop (with GUI)
+```
+
+**Scenario Q: "You need to reset the root password on a Linux server. How?"**
+> **Answer:** "Reboot the server → at GRUB menu, edit the kernel line and append `init=/bin/bash` or `rd.break` → boot into single-user mode → remount root filesystem as read-write (`mount -o remount,rw /`) → run `passwd root` → set new password → reboot. This works because run level 1 (rescue mode) gives root access without requiring the old password."
+
+---
+
+### **2.9. Sticky Bit, SUID, SGID, Umask**
+
+#### **Sticky Bit**
+
+**Interview Answer:**
+> "The sticky bit is a special permission set on directories. When set, only the file OWNER (or root) can delete or rename files in that directory — even if others have write permission. The classic example is `/tmp` — everyone can write to it, but you can't delete someone else's files."
+
+```bash
+# Check sticky bit on /tmp
+ls -ld /tmp
+# Output: drwxrwxrwt 15 root root 4096 Feb 15 10:00 /tmp
+#                  ^ The 't' at the end = sticky bit is set
+
+# Set sticky bit
+chmod +t /shared_folder
+chmod 1777 /shared_folder    # 1 = sticky bit
+
+# Real-world: Without sticky bit on /tmp, any user could delete
+# other users' temporary files, breaking running applications
+```
+
+#### **SUID (Set User ID)**
+
+**Interview Answer:**
+> "When SUID is set on an executable, it runs with the permissions of the FILE OWNER, not the user executing it. The classic example is `/usr/bin/passwd` — a normal user runs it, but it needs root permission to write to `/etc/shadow`. SUID makes this possible."
+
+```bash
+# Check SUID
+ls -l /usr/bin/passwd
+# Output: -rwsr-xr-x 1 root root 68208 Feb 15 /usr/bin/passwd
+#            ^ The 's' in owner execute position = SUID
+
+# Set SUID
+chmod u+s /path/to/binary
+chmod 4755 /path/to/binary    # 4 = SUID
+
+# ⚠️ SECURITY RISK: Never set SUID on scripts or editors!
+# An SUID shell or vim would give root access to any user.
+# Find all SUID files (security audit):
+find / -perm -4000 -type f 2>/dev/null
+```
+
+#### **SGID (Set Group ID)**
+
+**Interview Answer:**
+> "When SGID is set on a directory, new files created inside it inherit the GROUP of the directory, not the group of the user who created them. This is perfect for shared project directories."
+
+```bash
+# Example: Team project directory
+mkdir /project/team_alpha
+chgrp developers /project/team_alpha
+chmod g+s /project/team_alpha
+chmod 2775 /project/team_alpha    # 2 = SGID
+
+# Now when user 'alice' (group: alice) creates a file inside:
+# The file's group will be 'developers', not 'alice'
+# This ensures all team members can access each other's files
+```
+
+#### **Umask**
+
+**Interview Answer:**
+> "Umask is a mask that determines the DEFAULT permissions for newly created files and directories. The default umask is usually 022, which means new files get 644 (rw-r--r--) and new directories get 755 (rwxr-xr-x). The formula is: File = 666 - umask, Directory = 777 - umask."
+
+```bash
+# Check current umask
+umask
+# Output: 0022
+
+# How it works:
+# For FILES:    666 - 022 = 644 (rw-r--r--)
+# For DIRS:     777 - 022 = 755 (rwxr-xr-x)
+
+# Set more restrictive umask (for security-sensitive servers)
+umask 027
+# Files: 666 - 027 = 640 (rw-r-----)
+# Dirs:  777 - 027 = 750 (rwxr-x---)
+
+# Make persistent: add to ~/.bashrc or /etc/profile
+```
+
+**Special Permissions Summary:**
+| Permission | Numeric | On File | On Directory |
+|:---|:---|:---|:---|
+| **Sticky Bit** | 1 | (rarely used) | Only owner can delete files (`/tmp`) |
+| **SUID** | 4 | Runs as file owner | (rarely used) |
+| **SGID** | 2 | Runs as file group | New files inherit directory group |
+| **Umask** | N/A | Controls default permissions | Controls default permissions |
+
+---
+
+### **2.10. Linux Boot Process**
+
+**Interview Answer:**
+> "The Linux boot process goes through 6 stages: BIOS/UEFI → Boot Loader (GRUB) → Kernel → Init System (systemd) → Run Level/Target → Login prompt."
+
+```
+Power On
+    ↓
+┌─────────────────────────┐
+│ 1. BIOS/UEFI            │ → Hardware check (POST), finds boot device
+└───────────┬─────────────┘
+            ↓
+┌─────────────────────────┐
+│ 2. Boot Loader (GRUB2)  │ → Shows kernel options, loads kernel + initramfs
+└───────────┬─────────────┘
+            ↓
+┌─────────────────────────┐
+│ 3. Kernel                │ → Initializes hardware, mounts root filesystem
+└───────────┬─────────────┘
+            ↓
+┌─────────────────────────┐
+│ 4. systemd (PID 1)      │ → First process. Starts all services in parallel
+└───────────┬─────────────┘
+            ↓
+┌─────────────────────────┐
+│ 5. Target (Run Level)   │ → multi-user.target (servers) or graphical.target
+└───────────┬─────────────┘
+            ↓
+┌─────────────────────────┐
+│ 6. Login Prompt          │ → getty (CLI) or Display Manager (GUI)
+└─────────────────────────┘
+```
+
+---
+
+### **2.11. Cron Jobs (Task Scheduling)**
+
+```bash
+# Edit cron for current user
+crontab -e
+
+# Cron format:
+# MIN  HOUR  DAY  MONTH  WEEKDAY  COMMAND
+# *    *     *    *      *        command_to_run
+
+# Examples:
+# Run backup every day at 2:30 AM
+30 2 * * * /scripts/backup.sh
+
+# Run disk check every Monday at 6 AM
+0 6 * * 1 /scripts/disk_check.sh
+
+# Run log rotation every hour
+0 * * * * /usr/sbin/logrotate /etc/logrotate.conf
+
+# Run security scan at midnight on 1st of every month
+0 0 1 * * /scripts/security_scan.sh
+
+# List all cron jobs for current user
+crontab -l
+
+# List cron jobs for specific user (as root)
+crontab -l -u apache
+```
+
+---
+
+### **2.12. Soft Links vs Hard Links**
+
+| Feature | Hard Link | Soft Link (Symlink) |
+|:---|:---|:---|
+| **Command** | `ln file1 file2` | `ln -s file1 link1` |
+| **Inode** | Same inode number as original | Different inode number |
+| **Cross Filesystem** | No (must be on same partition) | Yes (can link across partitions) |
+| **Original Deleted** | Link still works (data exists until all hard links removed) | Link breaks (becomes dangling/dead) |
+| **Directories** | Cannot hard-link directories | Can link to directories |
+| **Size** | Same as original | Small (stores path only) |
+
+```bash
+# Create and verify
+echo "Hello" > original.txt
+ln original.txt hardlink.txt       # Hard link
+ln -s original.txt softlink.txt    # Soft link
+
+ls -li                             # -i shows inode numbers
+# 12345 -rw-r--r-- 2 user user 6 original.txt     ← inode 12345, link count 2
+# 12345 -rw-r--r-- 2 user user 6 hardlink.txt     ← SAME inode 12345!
+# 67890 lrwxrwxrwx 1 user user 12 softlink.txt -> original.txt  ← different inode
+
+rm original.txt
+cat hardlink.txt    # Still works! Data exists because hard link remains
+cat softlink.txt    # ERROR! "No such file" — soft link is now broken
+```
+
+---
+
+### **2.13. Process States**
+
+| State | Code | Meaning | Example |
+|:---|:---|:---|:---|
+| **Running** | R | Actively using CPU | A web server processing a request |
+| **Sleeping** | S | Waiting for an event (interruptible) | Apache waiting for a new HTTP connection |
+| **Disk Sleep** | D | Waiting for I/O (uninterruptible) | Process reading from a slow NFS mount |
+| **Stopped** | T | Suspended (Ctrl+Z) | You paused a `find` command |
+| **Zombie** | Z | Finished but parent hasn't collected exit status | Buggy parent process didn't call `wait()` |
+
+```bash
+# View process states
+ps aux
+# USER  PID  %CPU %MEM  VSZ   RSS TTY  STAT  START  TIME COMMAND
+# root    1  0.0  0.1  225828  9752 ?    Ss    10:00  0:01 /sbin/init
+#                                        ^^
+#                               S = Sleeping, s = session leader
+
+# Kill zombie processes (kill the PARENT, not the zombie)
+ps aux | grep Z        # Find zombies
+kill -SIGCHLD <parent_PID>    # Tell parent to reap
+```
 
 ---
 
