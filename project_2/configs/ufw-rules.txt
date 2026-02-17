@@ -4,11 +4,13 @@ Status: active
 
 To                         Action      From
 --                         ------      ----
-2222/tcp                   ALLOW       Anywhere
-80/tcp                     ALLOW       Anywhere
-443/tcp                    ALLOW       Anywhere
-9100/tcp                   ALLOW       Anywhere
-2222/tcp (v6)              ALLOW       Anywhere (v6)
-80/tcp (v6)                ALLOW       Anywhere (v6)
-443/tcp (v6)               ALLOW       Anywhere (v6)
-9100/tcp (v6)              ALLOW       Anywhere (v6)
+2222/tcp                   ALLOW       Anywhere                   # SSH Custom Port
+80/tcp                     ALLOW       Anywhere                   # HTTP
+443/tcp                    ALLOW       Anywhere                   # HTTPS
+3000/tcp                   ALLOW       Anywhere                   # Grafana
+9100/tcp                   ALLOW       Anywhere                   # Node Exporter
+2222/tcp (v6)              ALLOW       Anywhere (v6)              # SSH Custom Port
+80/tcp (v6)                ALLOW       Anywhere (v6)              # HTTP
+443/tcp (v6)               ALLOW       Anywhere (v6)              # HTTPS
+3000/tcp (v6)              ALLOW       Anywhere (v6)              # Grafana
+9100/tcp (v6)              ALLOW       Anywhere (v6)              # Node Exporter

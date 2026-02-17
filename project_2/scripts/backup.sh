@@ -25,6 +25,6 @@ else
     echo "[-] Backup failed!"
 fi
 
-# Retention Policy: Keep only last 5 backups
+# Retention Policy: Delete backups older than 7 days
 find $BACKUP_DIR -type f -name "*.tar.gz" -mtime +7 -delete
 echo "[*] Old backups cleaned up."

@@ -1,10 +1,10 @@
 # Monthly Server Health Report
 
-**Period:** February 2024
+**Period:** February 2025
 **Server:** lab-server (Ubuntu 22.04 LTS)
 **Uptime:** 15 days, 4 hours
 
-## 1. Resource Utilization Protocol
+## 1. Resource Utilization Summary
 | Resource | Average Usage | Peak Usage | Status |
 |---|---|---|---|
 | **CPU** | 5% | 45% | ✅ Healthy |

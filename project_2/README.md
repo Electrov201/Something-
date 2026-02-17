@@ -61,7 +61,7 @@ graph TD
 | **Ansible** | Configuration management & IaC | DevOps, SysAdmin |
 | **Nmap / Hydra** | Security auditing & testing | Security, SysAdmin |
 
-## � Lab Setup Options (How many VMs do I need?)
+## 🖥️ Lab Setup Options (How many VMs do I need?)
 
 You can choose one of these three setups based on your available RAM. **The "Minimal" setup is sufficient to complete the project.**
 
@@ -111,6 +111,7 @@ project_2/
 │   └── user-audit.sh
 ├── ansible/                       ← Ansible playbooks & inventory
 │   ├── inventory.ini
+│   ├── deploy-all.yml
 │   ├── playbook-hardening.yml
 │   ├── playbook-monitoring.yml
 │   └── playbook-nginx.yml

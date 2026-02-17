@@ -14,7 +14,7 @@
 
 ## Part A: Setup Cloud Ticketing (Free SaaS)
 
-> **Why Cloud?** In 2024, most companies use cloud-hosted ticketing systems (SaaS). Using a free cloud tier saves system resources (RAM) and lets you focus on **ticket management workflows** rather than server maintenance.
+> **Why Cloud?** In 2025, most companies use cloud-hosted ticketing systems (SaaS). Using a free cloud tier saves system resources (RAM) and lets you focus on **ticket management workflows** rather than server maintenance.
 
 ### Option 1: Spiceworks Cloud (Best for IT Support)
 **Spiceworks** is widely used in the industry for internal IT helpdesks.
@@ -36,7 +36,7 @@
 
 ## Part B: IT Support Scenarios (The 10/10 Skills)
 
-Once osTicket is running (or even without it), practice these common tickets. **Document these in your portfolio as "Solved Tickets".**
+Once your ticketing platform is set up (Spiceworks or Jira), practice these common tickets. **Document these in your portfolio as "Solved Tickets".**
 
 ### 🎟️ Scenario 1: "User Locked Out"
 **Ticket:** "I forgot my password and now my account is locked."

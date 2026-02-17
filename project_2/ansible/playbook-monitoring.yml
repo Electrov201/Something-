@@ -1,14 +1,16 @@
 ---
-- name: Deploy Monitoring Stack (Node Exporter)
+- name: Deploy Monitoring Stack (Prometheus, Node Exporter, Grafana)
   hosts: webservers
   become: yes
   vars:
     node_exporter_version: "1.7.0"
   tasks:
+    # --- Prometheus Server ---
     - name: Install Prometheus Server
       apt:
         name: prometheus
         state: present
+        update_cache: yes
 
     - name: Copy Prometheus Config
       copy:
@@ -16,10 +18,18 @@
         dest: /etc/prometheus/prometheus.yml
       notify: Restart Prometheus
 
+    - name: Ensure Prometheus is running
+      service:
+        name: prometheus
+        state: started
+        enabled: yes
+
+    # --- Node Exporter ---
     - name: Create Node Exporter user
       user:
         name: node_exporter
         shell: /bin/false
+        create_home: no
 
     - name: Download Node Exporter
       get_url:
@@ -32,18 +42,18 @@
         dest: /opt/
         remote_src: yes
 
-    - name: Symlink binary
+    - name: Symlink Node Exporter binary
       file:
         src: "/opt/node_exporter-{{ node_exporter_version }}.linux-amd64/node_exporter"
         dest: "/usr/local/bin/node_exporter"
         state: link
 
-    - name: Create Systemd Service
+    - name: Create Node Exporter Systemd Service
       copy:
         dest: /etc/systemd/system/node_exporter.service
         content: |
           [Unit]
-          Description=Node Exporter
+          Description=Prometheus Node Exporter
           After=network.target
 
           [Service]
@@ -60,11 +70,52 @@
         enabled: yes
         daemon_reload: yes
 
-    - name: Allow Port 9100
+    - name: Allow Port 9100 (Node Exporter)
       ufw:
         rule: allow
         port: '9100'
         proto: tcp
+        comment: 'Prometheus Node Exporter'
+
+    # --- Grafana ---
+    - name: Install Grafana dependencies
+      apt:
+        name:
+          - apt-transport-https
+          - software-properties-common
+          - wget
+        state: present
+
+    - name: Add Grafana GPG key
+      shell: |
+        mkdir -p /etc/apt/keyrings/
+        wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | tee /etc/apt/keyrings/grafana.gpg > /dev/null
+      args:
+        creates: /etc/apt/keyrings/grafana.gpg
+
+    - name: Add Grafana APT repository
+      copy:
+        dest: /etc/apt/sources.list.d/grafana.list
+        content: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main\n"
+
+    - name: Install Grafana
+      apt:
+        name: grafana
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Grafana
+      service:
+        name: grafana-server
+        state: started
+        enabled: yes
+
+    - name: Allow Port 3000 (Grafana)
+      ufw:
+        rule: allow
+        port: '3000'
+        proto: tcp
+        comment: 'Grafana Dashboard'
 
   handlers:
     - name: Restart Prometheus

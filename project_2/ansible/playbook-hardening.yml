@@ -15,19 +15,35 @@
           - fail2ban
           - net-tools
           - htop
+          - libpam-pwquality
         state: present
 
-    - name: Configure UFW defaults
+    - name: Deploy hardened sshd_config
+      copy:
+        src: ../configs/sshd_config
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: '0644'
+        backup: yes
+      notify: Restart SSH
+
+    - name: Configure UFW defaults (deny incoming)
       ufw:
         direction: incoming
         policy: deny
-        state: enabled
+
+    - name: Configure UFW defaults (allow outgoing)
+      ufw:
+        direction: outgoing
+        policy: allow
 
     - name: Allow SSH on custom port
       ufw:
         rule: allow
         port: '2222'
         proto: tcp
+        comment: 'SSH Custom Port'
 
     - name: Allow HTTP/HTTPS
       ufw:
@@ -38,8 +54,41 @@
         - '80'
         - '443'
 
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Configure Fail2Ban SSH jail
+      copy:
+        dest: /etc/fail2ban/jail.d/sshd.conf
+        content: |
+          [sshd]
+          enabled = true
+          port    = 2222
+          logpath = %(sshd_log)s
+          backend = %(sshd_backend)s
+          maxretry = 3
+          bantime  = 10m
+          findtime = 10m
+          ignoreip = 127.0.0.1/8 ::1
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Fail2Ban
+
     - name: Ensure Fail2Ban is running
       service:
         name: fail2ban
         state: started
         enabled: yes
+
+  handlers:
+    - name: Restart SSH
+      service:
+        name: sshd
+        state: restarted
+
+    - name: Restart Fail2Ban
+      service:
+        name: fail2ban
+        state: restarted
