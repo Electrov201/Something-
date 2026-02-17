@@ -1,0 +1,14 @@
+### UFW Rules Reference
+
+Status: active
+
+To                         Action      From
+--                         ------      ----
+2222/tcp                   ALLOW       Anywhere
+80/tcp                     ALLOW       Anywhere
+443/tcp                    ALLOW       Anywhere
+9100/tcp                   ALLOW       Anywhere
+2222/tcp (v6)              ALLOW       Anywhere (v6)
+80/tcp (v6)                ALLOW       Anywhere (v6)
+443/tcp (v6)               ALLOW       Anywhere (v6)
+9100/tcp (v6)              ALLOW       Anywhere (v6)

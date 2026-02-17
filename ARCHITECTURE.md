@@ -3,7 +3,8 @@
 This repository contains two primary projects focused on Security Operations Center (SOC) engineering:
 
 1.  **Project 1: SOC Lab Environment** (Network Simulation)
-2.  **Project 2: SOC Platform Implementation** (Kubernetes & SIEM)
+2.  **Project 2: Linux Server Admin & Security** (The "All-Rounder")
+3.  **Project 3: SOC Platform Implementation** (Kubernetes & SIEM)
 
 ---
 
@@ -60,7 +61,7 @@ graph TD
 
 ---
 
-## 2. Project 2: SOC Platform (Kubernetes)
+## 2. Project 3: SOC Platform (Kubernetes)
 **Location:** `/docs` (Root Documentation)
 
 This project implements a production-grade SOC stack using **Kubernetes (K8s)**. It replaces traditional Docker Compose setups with scalable Manifests for high availability.
@@ -122,3 +123,57 @@ graph TD
 -   **Wazuh Indexer:** A highly scalable search engine (OpenSearch) that stores indexed logs.
 -   **TheHive:** A Security Incident Response Platform (SIRP) for case management.
 -   **Grafana:** Provides specific security visualizations (EPS, Attack Maps) by querying the Indexer directly.
+
+---
+
+## 3. Project 2: Linux Server Administration & Security
+**Location:** `/project_2`
+
+This project is an **all-rounder infrastructure setup** designed to demonstrate core competencies for **IT Support**, **SysAdmin**, and **DevOps** roles. It features a hardened Linux server with automated monitoring and security response.
+
+### 🐧 Server & Network Architecture
+
+```mermaid
+graph TD
+    subgraph "Host / Hypervisor"
+        subgraph "Ubuntu Server 22.04"
+            SSH["SSH Service (Port 2222)"]
+            Nginx["Nginx Web Server (HTTPS)"]
+            UFW["UFW Firewall"]
+            F2B["Fail2Ban IPS"]
+            
+            subgraph "Monitoring & Logging"
+                NodeExp["Node Exporter"]
+                Prom["Prometheus"]
+                Graf["Grafana Dashboard"]
+            end
+        end
+        
+        subgraph "Automation & Attack Simulation"
+            Ansible["Ansible Control Node"]
+            Hydra["Hydra Brute-Force Tool"]
+        end
+    end
+
+    %% Connections
+    Ansible -->|"Configure & Harden"| SSH
+    Hydra -->|"Attack (Brute Force)"| SSH
+    F2B -->|"Block IP"| UFW
+    
+    %% Traffic Flow
+    User((User)) -->|"HTTPS (443)"| Nginx
+    Admin((Admin)) -->|"SSH (2222)"| SSH
+    Admin -->|"View Dashboards (3000)"| Graf
+    
+    %% Internal Monitoring
+    NodeExp -->|"Metrics"| Prom
+    Prom -->|"Data Source"| Graf
+```
+
+### 🔑 Key Components
+-   **Hardened SSH:** Custom port (2222), Key-based auth, Root login disabled.
+-   **Automated Defense:** Fail2Ban configured to auto-ban IPs after failed login attempts.
+-   **Web & Security:** Nginx with self-signed SSL (HTTPS) and security headers.
+-   **Monitoring Stack:** Prometheus and Grafana for real-time CPU/RAM/Disk visualization.
+-   **Automation:** Bash scripts for health checks/backups and Ansible playbooks for deployment.
+

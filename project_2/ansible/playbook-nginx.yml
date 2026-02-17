@@ -1,0 +1,44 @@
+---
+- name: Deploy Nginx with HTTPS
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create Web Root
+      file:
+        path: /var/www/lab-site
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Deploy index.html
+      copy:
+        dest: /var/www/lab-site/index.html
+        content: "<h1>Deployed via Ansible</h1><p>Secure Nginx Server</p>"
+
+    - name: Remove default site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Copy Nginx Config
+      # Assumes you have the config file locally in configs/nginx.conf
+      copy:
+        src: ../configs/nginx.conf
+        dest: /etc/nginx/sites-available/lab-site
+
+    - name: Enable Site
+      file:
+        src: /etc/nginx/sites-available/lab-site
+        dest: /etc/nginx/sites-enabled/lab-site
+        state: link
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

@@ -12,7 +12,13 @@ A network simulation project using **Cisco Packet Tracer**.
 - **Focus:** L1-L3 Networking, Firewalls (ASA), VPNs, WireShark Analysis.
 - **Goal:** Build a secure enterprise network from scratch and defend it.
 
-### [Project 2: SOC Platform (Kubernetes)](docs/phase1-infrastructure-setup.md)
+### [Project 2: Linux Server Administration & Security](project_2/README.md)
+**"The All-Rounder Project"**
+- **Focus:** Linux (Ubuntu), Nginx, Security Hardening, Automation (Bash/Ansible), Monitoring.
+- **Goal:** Build a secure, monitored, and automated server environment.
+- **Roles:** IT Support, SysAdmin, DevOps.
+
+### [Project 3: SOC Platform (Kubernetes)](docs/phase1-infrastructure-setup.md)
 A production-grade SOC implementation using **Kubernetes**.
 - **Focus:** Infrastructure as Code (K8s), Log Ingestion (Wazuh), Thread Detection, Incident Response (TheHive).
 - **Goal:** Deploy a scalable, self-healing SOC platform and process real security events.

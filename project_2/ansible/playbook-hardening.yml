@@ -1,0 +1,45 @@
+---
+- name: Server Hardening Playbook
+  hosts: webservers
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - ufw
+          - fail2ban
+          - net-tools
+          - htop
+        state: present
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: incoming
+        policy: deny
+        state: enabled
+
+    - name: Allow SSH on custom port
+      ufw:
+        rule: allow
+        port: '2222'
+        proto: tcp
+
+    - name: Allow HTTP/HTTPS
+      ufw:
+        rule: allow
+        port: '{{ item }}'
+        proto: tcp
+      loop:
+        - '80'
+        - '443'
+
+    - name: Ensure Fail2Ban is running
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
