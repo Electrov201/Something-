@@ -1,0 +1,4 @@
+---
+- import_playbook: playbook-hardening.yml
+- import_playbook: playbook-nginx.yml
+- import_playbook: playbook-monitoring.yml
