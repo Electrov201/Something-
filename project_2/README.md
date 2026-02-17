@@ -135,7 +135,6 @@ project_2/
 | 4 | [Automation](docs/phase4-automation.md) | Bash scripts + Ansible playbooks |
 | 5 | [Centralized Logging & Dashboards](docs/phase5-centralized-logging.md) | Prometheus, Grafana, Rsyslog |
 | 6 | [Documentation & Reports](docs/phase6-documentation-reports.md) | Incident reports, runbooks |
-| 7 | [Ticketing & User Support](docs/phase7-ticketing-scenarios.md) | Spiceworks/Jira setup, Password resets, Permissions |
 
 ## 🎯 Role Relevance Matrix
 
